@@ -86,5 +86,4 @@ The project directory contains a couple additional files, like the actual boid s
 
 * optimizing the algorithm w/ quadtrees
 * writing my own GUI library for Go
-
-    implementing sliders to allow the user to dynamically change the values of the simulation
+* implementing sliders to allow the user to dynamically change the values of the simulation
