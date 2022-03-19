@@ -27,7 +27,7 @@ When each of the agents abides by these rules, we can notice a pattern of behavi
 
 ### Design choices
 
-Refer to the design [document](/DESIGN).
+Refer to the design [document](DESIGN.md).
 
 ### Requirements
 
