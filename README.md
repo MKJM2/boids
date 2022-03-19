@@ -25,6 +25,10 @@ Boids (bird-oid objects) are individual autonomous agents following a set of sim
 
 When each of the agents abides by these rules, we can notice a pattern of behaviour emerging from all of the boids. We call that the **emergent behaviour**. In this case, the emergent behaviour is the creation of flocks of individual boids.
 
+### Design choices
+
+Refer to the design [document](/DESIGN).
+
 ### Requirements
 
 * Go
