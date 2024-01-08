@@ -7,13 +7,14 @@ import (
 
 var (
 	separationFactor     = flag.Float64("separationFactor", 5.0, "separation factor") // Boid represents a boid in the simulation.
-	separationPerception = 50.0
+	separationPerception = 70.0
 	alignmentFactor      = flag.Float64("alignmentFactor", 5.0, "alignment factor")
-	alignmentPerception  = 150.0
-	cohesionPerception   = 150.0
-	cohesionFactor       = flag.Float64("cohesionFactor", 2.0, "cohesion factor")
-	maxVelocity          = 200.0
-	centerAttraction     = flag.Float64("centerAttraction", 0.1, "center attraction")
+	alignmentPerception  = 250.0
+	cohesionPerception   = 200.0
+	cohesionFactor       = flag.Float64("cohesionFactor", 3.0, "cohesion factor")
+	minVelocity          = 20.0
+	maxVelocity          = 300.0
+	centerAttraction     = flag.Float64("centerAttraction", 0.2, "center attraction")
 )
 
 type Boid struct {
@@ -40,9 +41,18 @@ func (b *Boid) Move(dt float64) error {
 
 	b.position = b.position.Add(b.velocity.Scaled(dt))
 	b.velocity = b.velocity.Add(b.acceleration)
-	limit(&b.velocity, maxVelocity)
+	// limit(&b.velocity, maxVelocity)
+	b.MaintainVelocity()
 	b.acceleration = Vector{}
 	return nil
+}
+
+func (b *Boid) MaintainVelocity() {
+	if b.velocity.Len() < minVelocity {
+		b.velocity = b.velocity.Unit().Scaled(minVelocity)
+	} else if b.velocity.Len() > maxVelocity {
+		b.velocity = b.velocity.Unit().Scaled(maxVelocity)
+	}
 }
 
 // Position returns the boid's position.

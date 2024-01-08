@@ -77,8 +77,9 @@ func (g *Game) initialize() {
 	for i := range flock.boids {
 		flock.boids[i] = NewBoid(fmt.Sprintf("%d", i),
 			rand.Intn(len(sprites)),
-			Vector{X: -float64(screenWidth/2) + rand.Float64()*float64(screenWidth), Y: -float64(screenHeight/2) + rand.Float64()*float64(screenHeight)}, // position
-			Vector{X: -100 + rand.Float64()*200, Y: -100 + rand.Float64()*200},                                                                           // velocity
+			Vector{X: -float64(screenWidth/2) + rand.Float64()*float64(screenWidth),
+				Y: -float64(screenHeight/2) + rand.Float64()*float64(screenHeight)}, // position
+			Vector{X: -100 + rand.Float64()*200, Y: -100 + rand.Float64()*200}, // velocity
 			Vector{X: 0, Y: 0}, // acceleration
 		)
 		unproject := g.cam()
@@ -131,6 +132,8 @@ func (g *Game) Update() error {
 		mx, my := boid.PositionXY()
 		ux, uy := unproject.Apply(mx, my)
 		mat := ebiten.GeoM{}
+		// Stretch horizontally the faster the boid goes
+		mat.Scale(1-boid.Velocity().Len()/750, 1)
 		mat.Rotate(boid.Velocity().Angle() + 1.5707963267948966)
 		mat.Translate(ux, uy)
 		mat.Translate(-32/2, -32/2)
@@ -178,7 +181,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// msg := fmt.Sprintf("FPS: %0.2f\nCam X: %0.2f\nCam Y: %0.2f\nZoom: %0.5f\nMode: %d\nLast Mouse X: %0.2f\n Last Mouse Y: %0.2f\n", ebiten.ActualFPS())
 	// ebitenutil.DebugPrint(screen, msg)
 
-	msg := fmt.Sprintf("TPS: %0.2f\nCam X: %0.2f\nCam Y: %0.2f\nZoom: %0.5f\nMode: %d\nLast Mouse X: %0.2f\n Last Mouse Y: %0.2f\n", ebiten.ActualTPS(), g.camPos.X, g.camPos.Y, g.camZoom, 0, 0, 0)
+	msg := fmt.Sprintf(`
+			FPS: %0.2f\n
+			Cam X: %0.2f\n
+			Cam Y: %0.2f\n
+			Zoom: %0.5f\n
+			Mode: %d\n`, ebiten.ActualFPS(), g.camPos.X, g.camPos.Y, g.camZoom, 0)
 	ebitenutil.DebugPrint(screen, msg)
 }
 
