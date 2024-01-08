@@ -60,7 +60,7 @@ go build .
 `
 Then, to run the project
 ```
-./cs50-project
+./boids
 ```
 in your terminal.
 
@@ -68,18 +68,13 @@ in your terminal.
 
 To change the variables used for the simulation, pass their values to the executable by using the relevant command-line arguments:
 ```
-./cs50-project -a 4.0 -c 2.5 -s 3.0 -n 100
+./cs50 -a 4.0 -c 2.5 -s 3.0 -n 100
 ```
 The above example sets the alignment factor to `4.0`, the cohesion factor to `2.5`, and the separation factor to `3.0`. The last flag specifies that a hundred boids is going to be simulated. 
 
 To move the camera view around, simply click&drag using your mouse (similarly to Google Maps). You can also zoom in using your scroll wheel. 
 
-
 To quit the simulation and exit the program, press the <kbd>Esc</kbd> key.
-
-### Video showcase
-
-This youtube [video](https://youtu.be/t9H1tSiELeU) showcases the project.
 
 ### Acknowledgements
 

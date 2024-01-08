@@ -1,14 +1,14 @@
 # Design document for boid simulations
 
+Originally developed for my final project for CS50: Introduction to Computer Science
+
 ### Introduction
 
 In this project, I implement a brute flocking algorithm inspired by Craig
 Reynolds [article](https://www.red3d.com/cwr/boids/), using the Go programming
-language and
-[Pixel](https://github.com/faiface/pixel)
-as my 2D rendering library of choice.
+language and Ebitengine as my 2D rendering library of choice.
 
-In the process of creating this project, I have had to learn the basics of the Go language, the Pixel library, as well as understand the theory behind the flocking algorithm to try and implement it on my own.
+In the process of creating this project, I have had to learn the basics of the Go language, the Ebitengine library, as well as understand the theory behind the flocking algorithm to try and implement it on my own.
 
 Some of the biggest challenges I have come across while developing my project were:
 
