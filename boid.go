@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	separationFactor     = flag.Float64("separationFactor", 5.0, "separation factor") // Boid represents a boid in the simulation.
+	separationFactor     = flag.Float64("separationFactor", 7.0, "separation factor") // Boid represents a boid in the simulation.
 	separationPerception = 70.0
-	alignmentFactor      = flag.Float64("alignmentFactor", 5.0, "alignment factor")
+	alignmentFactor      = flag.Float64("alignmentFactor", 4.0, "alignment factor")
 	alignmentPerception  = 250.0
 	cohesionPerception   = 200.0
 	cohesionFactor       = flag.Float64("cohesionFactor", 3.0, "cohesion factor")

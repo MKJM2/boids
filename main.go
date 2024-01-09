@@ -18,6 +18,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	_ "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -26,15 +27,21 @@ type Game struct {
 	camSpeed     float64
 	camZoom      float64
 	camZoomSpeed float64
+	camMode      int
+	anchorPos    Vector
+	lastCamPos   Vector
 	matrices     []ebiten.GeoM
+	cursor       ebiten.CursorShapeType
 }
 
 const (
 	screenWidth  = 1920
 	screenHeight = 1080
+	boidWidth    = 64
+	boidHeight   = 64
 )
 
-//go:embed boidsGlow.png
+//go:embed boidsGlow64.png
 var b_boidImage []byte
 
 var (
@@ -59,8 +66,6 @@ func loadSprites() {
 }
 
 func loadBoidSprites() {
-	const boidWidth = 32
-	const boidHeight = 32
 	for y := 0; y < boidImage.Bounds().Max.Y; y += boidHeight {
 		for x := 0; x < boidImage.Bounds().Max.X; x += boidWidth {
 			subImg := boidImage.SubImage(image.Rect(x, y, x+boidWidth, y+boidHeight))
@@ -87,8 +92,8 @@ func (g *Game) initialize() {
 		mx, my := flock.boids[i].Position().X, flock.boids[i].Position().Y
 		ux, uy := unproject.Apply(float64(mx), float64(my))
 		mat := ebiten.GeoM{}
+		mat.Translate(-boidWidth/2, -boidHeight/2)
 		mat.Translate(ux, uy)
-		mat.Translate(-32/2, -32/2)
 		g.matrices = append(g.matrices, ebiten.GeoM{})
 	}
 }
@@ -101,8 +106,12 @@ func main() {
 	g := Game{
 		camSpeed:     300,
 		camZoom:      1,
-		camZoomSpeed: 1.2,
+		camZoomSpeed: 1.05,
+		camMode:      0,
+		anchorPos:    Vector{X: 0, Y: 0},
+		lastCamPos:   Vector{X: 0, Y: 0},
 		matrices:     []ebiten.GeoM{},
+		cursor:       ebiten.CursorShapeDefault,
 	}
 
 	g.initialize()
@@ -120,8 +129,8 @@ func (g *Game) Update() error {
 		os.Exit(0)
 	}
 
-	// Delta time
-	dt := 1.0 / ebiten.ActualTPS()
+	// In ebitengine, the delta time is always 1/60
+	// dt := 1.0 / 60
 
 	for i, boid := range flock.boids {
 		boid.Rules(flock.boids)
@@ -133,25 +142,69 @@ func (g *Game) Update() error {
 		ux, uy := unproject.Apply(mx, my)
 		mat := ebiten.GeoM{}
 		// Stretch horizontally the faster the boid goes
-		mat.Scale(1-boid.Velocity().Len()/750, 1)
+		mat.Translate(-boidWidth/2, -boidHeight/2)
+		mat.Scale(1-boid.Velocity().Len()/750, 1+boid.Velocity().Len()/550)
 		mat.Rotate(boid.Velocity().Angle() + 1.5707963267948966)
 		mat.Translate(ux, uy)
-		mat.Translate(-32/2, -32/2)
 		g.matrices[i] = mat
 	}
 
+	/* Handle pan to move the camera, using mouse as anchor point */
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+		g.camMode = 1
+		mx, my := ebiten.CursorPosition()
+		g.anchorPos = NewVector(float64(mx), float64(my))
+		g.cursor = ebiten.CursorShapeMove
+		ebiten.SetCursorShape(g.cursor)
+	}
+
+	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+		g.camMode = 0
+		g.cursor = ebiten.CursorShapeDefault
+		ebiten.SetCursorShape(g.cursor)
+		g.lastCamPos = g.camPos
+	}
+
+	if g.camMode == 1 {
+		mx, my := ebiten.CursorPosition()
+		dx, dy := float64(mx)-g.anchorPos.X, float64(my)-g.anchorPos.Y
+
+		// g.camPos.X = -(float64(mx) - g.anchorPos.X) * 1 / g.camZoom
+		// g.camPos.Y = -(float64(my) - g.anchorPos.Y) * 1 / g.camZoom
+		g.camPos.X = g.lastCamPos.X - dx*1/g.camZoom
+		g.camPos.Y = g.lastCamPos.Y - dy*1/g.camZoom
+	}
+
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		g.camPos.X -= g.camSpeed * dt * 1 / g.camZoom
+		*separationFactor -= 0.1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		g.camPos.X += g.camSpeed * dt * 1 / g.camZoom
+		*separationFactor += 0.1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyDown) {
-		g.camPos.Y += g.camSpeed * dt * 1 / g.camZoom
+		*alignmentFactor -= 0.1
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
-		g.camPos.Y -= g.camSpeed * dt * 1 / g.camZoom
+		*alignmentFactor += 0.1
 	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		boid := NewBoid(fmt.Sprintf("%d", len(flock.boids)), rand.Intn(len(sprites)), Vector{X: -float64(screenWidth/2) + rand.Float64()*float64(screenWidth), Y: -float64(screenHeight/2) + rand.Float64()*float64(screenHeight)}, // position
+			Vector{X: -100 + rand.Float64()*200, Y: -100 + rand.Float64()*200}, // velocity
+			Vector{X: 0, Y: 0}, // acceleration
+		)
+		unproject := g.cam()
+		unproject.Invert()
+		mx, my := ebiten.CursorPosition()
+		ux, uy := unproject.Apply(float64(mx), float64(my))
+		mat := ebiten.GeoM{}
+		mat.Translate(-boidWidth/2, -boidHeight/2)
+		mat.Translate(ux, uy)
+		g.matrices = append(g.matrices, ebiten.GeoM{})
+		flock.boids = append(flock.boids, boid)
+		*numBoids += 1
+	}
+
 	_, wy := ebiten.Wheel()
 	g.camZoom *= math.Pow(g.camZoomSpeed, wy)
 
@@ -182,11 +235,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// ebitenutil.DebugPrint(screen, msg)
 
 	msg := fmt.Sprintf(`
-			FPS: %0.2f\n
-			Cam X: %0.2f\n
-			Cam Y: %0.2f\n
-			Zoom: %0.5f\n
-			Mode: %d\n`, ebiten.ActualFPS(), g.camPos.X, g.camPos.Y, g.camZoom, 0)
+			FPS: %0.2f
+			TPS: %0.2f
+			Cam X: %0.2f
+			Cam Y: %0.2f
+			Zoom: %0.5f
+			Mode: %d
+			A: %0.2f
+			S: %0.2f
+			C: %0.2f`, ebiten.ActualFPS(), ebiten.ActualTPS(), g.camPos.X, g.camPos.Y, g.camZoom, g.camMode, *alignmentFactor, *separationFactor, *cohesionFactor)
 	ebitenutil.DebugPrint(screen, msg)
 }
 
