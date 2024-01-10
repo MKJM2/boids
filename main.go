@@ -12,7 +12,6 @@ import (
 	_ "image/color"
 	_ "image/png"
 	"log"
-	"math"
 	"math/rand"
 	"os"
 
@@ -189,10 +188,6 @@ func (g *Game) Update() error {
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		boid := NewBoid(fmt.Sprintf("%d", len(flock.boids)), rand.Intn(len(sprites)), Vector{X: -float64(screenWidth/2) + rand.Float64()*float64(screenWidth), Y: -float64(screenHeight/2) + rand.Float64()*float64(screenHeight)}, // position
-			Vector{X: -100 + rand.Float64()*200, Y: -100 + rand.Float64()*200}, // velocity
-			Vector{X: 0, Y: 0}, // acceleration
-		)
 		unproject := g.cam()
 		unproject.Invert()
 		mx, my := ebiten.CursorPosition()
@@ -200,13 +195,47 @@ func (g *Game) Update() error {
 		mat := ebiten.GeoM{}
 		mat.Translate(-boidWidth/2, -boidHeight/2)
 		mat.Translate(ux, uy)
-		g.matrices = append(g.matrices, ebiten.GeoM{})
+		g.matrices = append(g.matrices, mat)
+		boid := NewBoid(fmt.Sprintf("%d", len(flock.boids)),
+			rand.Intn(len(sprites)),
+			Vector{X: ux, Y: uy}, // position
+			Vector{X: -100 + rand.Float64()*200, Y: -100 + rand.Float64()*200}, // velocity
+			Vector{X: 0, Y: 0}, // acceleration
+		)
 		flock.boids = append(flock.boids, boid)
-		*numBoids += 1
+		*numBoids++
 	}
 
-	_, wy := ebiten.Wheel()
-	g.camZoom *= math.Pow(g.camZoomSpeed, wy)
+	_, wheel_y := ebiten.Wheel()
+	// g.camZoom *= math.Pow(g.camZoomSpeed, wheel_y)
+
+	mx, my := ebiten.CursorPosition()
+
+	// Get the camera transformation
+	cam := g.cam()
+
+	// Get the inverse of the camera transformation
+	inverseCam := cam
+	inverseCam.Invert()
+
+	// Convert the screen coordinates to world coordinates
+	wx, wy := inverseCam.Apply(float64(mx), float64(my))
+
+	if ebiten.IsKeyPressed(ebiten.KeyQ) || wheel_y < 0 {
+		g.camZoom *= (1 / g.camZoomSpeed)
+		g.camPos.X -= (wx - g.camPos.X) * g.camZoomSpeed / 20
+		g.camPos.Y -= (wy - g.camPos.Y) * g.camZoomSpeed / 20
+
+		g.lastCamPos = g.camPos
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyE) || wheel_y > 0 {
+		g.camZoom *= g.camZoomSpeed
+		g.camPos.X += (wx - g.camPos.X) * (1 / g.camZoomSpeed) / 20
+		g.camPos.Y += (wy - g.camPos.Y) * (1 / g.camZoomSpeed) / 20
+
+		g.lastCamPos = g.camPos
+	}
 
 	return nil
 }
